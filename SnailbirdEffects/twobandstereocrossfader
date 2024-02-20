@@ -4,9 +4,9 @@ desc:Split-Band Stereo Crossover [Snailbird]
 //tags: routing
 //author: Daniel Harvey
 
-slider1:1<1,0,0.001>Low Mix
-slider2:1<1,0,0.001>High Mix
-slider3:1<1,0,0.001>Full Mix
+slider1:1<1,0,0.05>Low Mix
+slider2:1<1,0,0.05>High Mix
+slider3:1<1,0,0.05>Full Mix
 slider4:200<0,22000,1:log=1000>Crossover
 
 in_pin:X Source Left Input
