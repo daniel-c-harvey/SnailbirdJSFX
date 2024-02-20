@@ -1,0 +1,66 @@
+// 
+desc:Split-Band Stereo Crossover
+desc:Split-Band Stereo Crossover [Snailbird]
+//tags: routing
+//author: Daniel Harvey
+
+slider1:1<1,0,0.001>Low Mix
+slider2:1<1,0,0.001>High Mix
+slider3:1<1,0,0.001>Full Mix
+slider4:200<0,22000,1:log=1000>Crossover
+
+in_pin:X Source Left Input
+in_pin:X Source Right Input
+in_pin:Y Source Left Input
+in_pin:Y Source Right Input
+out_pin:Left Output
+out_pin:Right Output
+
+@init
+cDenorm=10^-30;
+full_mix_temp = 1;
+ext_tail_size = 2;
+
+@slider
+full_mix_temp == slider3 ? (
+  low_mix = slider1;
+  high_mix = slider2;
+) : (
+  full_mix_temp = slider3;
+  low_mix = full_mix_temp;
+  high_mix = full_mix_temp;
+  slider1 = full_mix_temp;
+  slider2 = full_mix_temp;
+);
+
+low_mix_complement = 1 - low_mix;
+high_mix_complement = 1 - high_mix;
+
+freqLP = max(min(slider4,srate),0);
+xLP = exp(-2.0*$pi*freqLP/srate);
+a0LP = 1.0-xLP;
+b1LP = -xLP;
+
+@sample
+// read samples
+lX = spl0;
+rX = spl1;
+lY = spl2;
+rY = spl3;
+
+// calculate lowpass signal
+lLowX = (tmplXLP = a0LP*lX - b1LP*tmplXLP + cDenorm);
+rLowX = (tmprXLP = a0LP*rX - b1LP*tmprXLP + cDenorm);
+lLowY = (tmplYLP = a0LP*lY - b1LP*tmplYLP + cDenorm);
+rLowY = (tmprYLP = a0LP*rY - b1LP*tmprYLP + cDenorm);
+
+// calculate high pass by subtracting lowpass from full range
+lHighX = lX - lLowX;
+rHighX = rX - rLowX;
+lHighY = lY - lLowY;
+rHighY = rY - rLowY;
+
+spl0 = low_mix*lLowX + low_mix_complement*lLowY + 
+        high_mix*lHighX + high_mix_complement*lHighY;
+spl1 = low_mix*rLowX + low_mix_complement*rLowY + 
+        high_mix*rHighX + high_mix_complement*rHighY;

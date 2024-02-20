@@ -1,0 +1,37 @@
+// (C) 2024, Daniel Harvey
+desc:2-Band Splitter
+desc:2-Band Splitter (Splits In Low:1+2,High:3+4) [Snailbird]
+//tags: processing routing
+//author: Snailbird
+
+slider1:200<0,22000,1:log=1000>Crossover (Hz)
+
+in_pin:left input
+in_pin:right input
+out_pin:low output left
+out_pin:low output right
+out_pin:high output left
+out_pin:high output right
+
+@init
+cDenorm=10^-30;
+ext_tail_size=-1;
+
+@slider
+freqLP = max(min(slider1,srate),0);
+xLP = exp(-2.0*$pi*freqLP/srate);
+a0LP = 1.0-xLP;
+b1LP = -xLP;
+
+@sample
+
+s0 = spl0;
+s1 = spl1;
+
+spl0 = (tmplLP = a0LP*s0 - b1LP*tmplLP + cDenorm);
+spl1 = (tmprLP = a0LP*s1 - b1LP*tmprLP + cDenorm);
+
+spl2 = s0 - spl0;
+spl3 = s1 - spl1;
+
+

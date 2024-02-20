@@ -1,0 +1,34 @@
+desc:Stereo Crossover
+//tags: routing mixer fader crossfade
+//author: Daniel Harvey
+
+
+slider1:1<1,0,-0.001>X Source <-> Y Source Mix
+--slider2:3<1,10,0.1>n -- debug only
+
+in_pin:X Source Left Input
+in_pin:X Source Right Input
+in_pin:Y Source Left Input
+in_pin:Y Source Right Input
+out_pin:Left Output
+out_pin:Right Output
+
+@init
+ext_tail_size = -2;
+
+@slider
+x = slider1;
+n = 1; --slider2;
+aX = 1-x^n;
+aY = 1-(1-x)^n;
+
+@sample
+lX = spl0;
+rX = spl1;
+lY = spl2;
+rY = spl3;
+
+spl0 = aX*lX + aY*lY;
+spl1 = aX*rX + aY*rY;
+spl2 = 0;
+spl3 = 0;
