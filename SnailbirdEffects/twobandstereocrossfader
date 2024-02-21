@@ -4,10 +4,10 @@ desc:Split-Band Stereo Crossover [Snailbird]
 //tags: routing
 //author: Daniel Harvey
 
-slider1:1<1,0,0.05>Low Mix
-slider2:1<1,0,0.05>High Mix
-slider3:1<1,0,0.05>Full Mix
-slider4:200<0,22000,1:log=1000>Crossover
+slider1:1<1,0,0.05>X <-> Y Low Mix
+slider2:1<1,0,0.05>X <-> Y High Mix
+slider3:1<1,0,0.05>X <-> Y Full Mix
+slider4:200<0,22000,1:log=1000>X & Y Pre-Mix Crossover (Hz)
 
 in_pin:X Source Left Input
 in_pin:X Source Right Input
@@ -60,6 +60,7 @@ rHighX = rX - rLowX;
 lHighY = lY - lLowY;
 rHighY = rY - rLowY;
 
+// filter and mix
 spl0 = low_mix*lLowX + low_mix_complement*lLowY + 
         high_mix*lHighX + high_mix_complement*lHighY;
 spl1 = low_mix*rLowX + low_mix_complement*rLowY + 
