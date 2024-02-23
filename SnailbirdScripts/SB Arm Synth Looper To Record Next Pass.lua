@@ -1,49 +1,9 @@
+require "include.track_util";
+
 local DEBUG_OUTPUT = false;
 local LOOP_NAME = "~LOOP~";
 local LOOP_START = "~LOOP START~";
 local LOOP_END = "~LOOP END~";
-
-function string.starts(String,Start)
-   return string.sub(String,1,string.len(Start))==Start
-end
-
-function GetTracksByName(names)
-  local foundTracks = {};
-  local foundTracksCount = 0;
-  
-  for trackIndex = 0, reaper.CountTracks(0) - 1 do
-    local track = reaper.GetTrack(0, trackIndex)
-    local ok, trackName = reaper.GetSetMediaTrackInfo_String(track, 'P_NAME', '', false)
-    
-    if ok then
-      -- check if this track matches any of our names
-      for nameIndex = 1, #names do
-      local name = names[nameIndex];
-        if trackName == name then
-          foundTracks[nameIndex] = track -- found it!
-          foundTracksCount = foundTracksCount + 1;
-          if foundTracksCount >= #names then 
-            return true, foundTracks; -- found all, abort early
-          end
-        end
-      end
-    end
-  end
-  return false, foundTracks; -- we only get here if we didn't find everyone
-end
- 
-function SelectAndArmTracks(tracks)
-  if(#tracks > 0)
-  then
-    reaper.SetOnlyTrackSelected(tracks[1]);
-    reaper.SetTrackUIRecArm(tracks[1], 1, 1);
-    for index = 2, #tracks do
-      local track = tracks[index];
-      reaper.SetTrackSelected(track, true);
-      reaper.SetTrackUIRecArm(track, 1, 1);
-    end
-  end
-end
 
 function MuteUnmuteLooperSends(tracks, mute)
   if(#tracks > 0)
@@ -184,7 +144,7 @@ function()
                 if DEBUG_OUTPUT then
                   reaper.ShowConsoleMsg("Checking time... " .. tostring(counter) .. " " .. tostring(reaper.GetPlayPosition()) .. "\n");
                 end
-                return reaper.GetPlayPosition() > start_time; 
+                return reaper.GetPlayPosition() > start_time;
               end,
               function()
                 -- stop record
