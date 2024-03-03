@@ -60,7 +60,7 @@ rHighX = rX - rLowX;
 lHighY = lY - lLowY;
 rHighY = rY - rLowY;
 
-// filter and mix
+// mix
 spl0 = low_mix*lLowX + low_mix_complement*lLowY + 
         high_mix*lHighX + high_mix_complement*lHighY;
 spl1 = low_mix*rLowX + low_mix_complement*rLowY + 
