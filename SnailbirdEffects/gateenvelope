@@ -1,0 +1,78 @@
+//Gated Amp Envelope
+desc:Gated Amp Envelope [Snailbird]
+desc:Rhythmic Amp Envelope for Trance Gate Effects
+//tags: audio effect
+//author: Daniel Harvey
+
+slider1:10<0,1000,1>Attack (ms)
+slider2:0<0,1000,1>Hold (ms)
+slider3:50<0,100,1>Hold (%)
+slider4:10<1,0,1>Release (ms)
+slider5:1<1,32,1>Sync Numerator
+slider6:4<4,32,4>Sync Denominator
+slider7:0<0,1,0.01>Env Amt 1
+//slider8:0<0,1,0.01>Env Amt 2
+//slider9:0<0,1,0.01>Env Amt 3
+//slider10:0<0,1,0.01>Env Amt 4
+//slider11:0<0,1,0.01>Env Amt 5
+//slider12:0<0,1,0.01>Env Amt 6
+//slider13:0<0,1,0.01>Env Amt 7
+//slider14:0<0,1,0.01>Env Amt 8
+
+slider15:0<0,1,0.01>TEST OUTPUT
+
+in_pin:Left Input
+in_pin:Right Input
+out_pin:Left Output
+out_pin:Right Output
+
+@init
+freemem = 0;
+function malloc(size) ((freemem += size) - size);
+env_amt = malloc(8 * 4);
+env_block = malloc(samplesblock * 4);
+
+ms_per_beat = 1/tempo * 60000;
+
+@slider
+sync_num   = slider5;
+sync_denom = slider6;
+
+attack_ms  = slider1;
+release_ms = slider4;
+
+hold_p =  slider3;
+hold_ms = slider2 + ms_per_beat * 
+          sync_denom/ts_denom * sync_num * hold_p;
+          
+env_amt[0] = slider7;
+env_amt[1] = slider8;
+env_amt[2] = slider9;
+env_amt[3] = slider10;
+env_amt[4] = slider11;
+env_amt[5] = slider12;
+env_amt[6] = slider13;
+env_amt[7] = slider14;
+
+@block
+dt = 1/srate;
+dt_beats = dt * tempo / 60;
+env_index = floor((beat_position - 1) % 8);
+env_group_startpos = floor((beat_position - 1) / 8) * 8 + 1;
+env_start_pos = env_group_startpos + env_index;
+
+current_position = beat_position - env_start_pos;
+samples_index = 0;
+loop(samplesblock,
+  t_e =  + dt_beats * samples_index;
+  env_scalar = env_amt[env_index];
+  env_block[samples_index] = env_scalar;
+  samples_index += 1;
+);
+samples_index = 0;
+
+@sample
+spl0 *= env_block[samples_index];
+spl1 *= env_block[samples_index];
+slider15 = env_block[samples_index]; 
+samples_index += 1;
