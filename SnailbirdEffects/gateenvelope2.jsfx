@@ -30,7 +30,9 @@ out_pin:Right Output
 @init
 freemem = 0;
 function malloc(size) ((freemem += size) - size);
-env_amt = malloc(8 * 4);
+
+ENV_COUNT = 8;
+env_amt = malloc(ENV_COUNT * 4);
 env_block = malloc(samplesblock * 4);
 
 sync_num   = $x0;
@@ -46,15 +48,12 @@ release_sec = $x0;
 hold_p =  $x0;
 hold_ms = $x0;
 hold_sec = $x0;
-          
-env_amt[0] = $x0;
-env_amt[1] = $x0;
-env_amt[2] = $x0;
-env_amt[3] = $x0;
-env_amt[4] = $x0;
-env_amt[5] = $x0;
-env_amt[6] = $x0;
-env_amt[7] = $x0;
+
+env_index = 0;
+loop(ENV_COUNT - 1,
+  env_amt[env_index] = $x0;
+  env_index += 1;
+);
 
 function process_params()
 (
@@ -94,15 +93,17 @@ sec_per_beat = 1/tempo * 60;
 ms_per_beat = sec_per_beat * 1000;
 dt = 1/srate; 
 
-env_number = floor((beat_position * sync_denom / ts_denom - 1) % 8);
-env_group_startpos = floor((beat_position * sync_denom / ts_denom - 1) *
+pulse_position = beat_position * sync_denom / ts_denom * sync_num;
+
+env_group_startpos = floor((pulse_position - 1) *
                       ts_denom / sync_denom / 8) * 8 + 1;
-env_start_pos = (env_group_startpos + env_number) * 
-                  sec_per_beat * sync_denom / ts_denom;
+
+env_start_pos = (env_group_startpos + env_number);
 
 // precompute a block of envelope scalars to apply to the samples
 env_index = 0;
 loop(samplesblock,
+  env_number = floor((pulse_position - 1) % 8);
   t_env = (play_position - env_start_pos) * 1000 + (dt * env_index);
   env_scalar = env_amt[env_number] * 
       ((t_env < attack_ms) ? 

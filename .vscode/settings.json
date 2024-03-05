@@ -1,5 +1,8 @@
 {
     "Lua.diagnostics.globals": [
         "reaper"
+    ],
+    "Lua.workspace.library": [
+        "c:\\Users\\dharvey\\.vscode\\extensions\\antoinebalaine.reascript-docs-0.1.2/resources/reaper-types.lua"
     ]
 }

@@ -1,0 +1,131 @@
+//Gated Amp Envelope
+desc:Gated Amp Envelope [Snailbird]
+desc:Rhythmic Amp Envelope for Trance Gate Effects
+//tags: audio effect
+//author: Daniel Harvey
+
+slider1:5<0,200,1:log=100>Attack (ms)
+slider2:0<0,1000,1:log=100>Hold (ms)
+slider3:50<0,100,1>Hold (%)
+slider4:5<0,500,1:log=100>Release (ms)
+slider5:1<0.1,10,0.05:log=1>φ Curve
+slider6:1<1,32,1>Sync Numerator
+slider7:4<4,32,4>Sync Denominator
+slider8:1<0,1,0.01>Env Amt 1
+slider9:1<0,1,0.01>Env Amt 2
+slider10:1<0,1,0.01>Env Amt 3
+slider11:1<0,1,0.01>Env Amt 4
+slider12:1<0,1,0.01>Env Amt 5
+slider13:1<0,1,0.01>Env Amt 6
+slider14:1<0,1,0.01>Env Amt 7
+slider15:1<0,1,0.01>Env Amt 8
+
+//slider16:0<0,1,0.01>TEST OUTPUT
+
+in_pin:Left Input
+in_pin:Right Input
+out_pin:Left Output
+out_pin:Right Output
+
+@init
+freemem = 0;
+function malloc(size) ((freemem += size) - size);
+
+ENV_COUNT = 8;
+env_amt = malloc(ENV_COUNT * 4);
+env_block = malloc(samplesblock * 4);
+
+sync_num   = $x0;
+sync_denom = $x0;
+
+phi = $x0;
+
+attack_ms  = $x0;
+attack_sec = $x0;
+release_ms = $x0;
+release_sec = $x0;
+
+hold_p =  $x0;
+hold_ms = $x0;
+hold_sec = $x0;
+
+env_index = 0;
+loop(ENV_COUNT - 1,
+  env_amt[env_index] = $x0;
+  env_index += 1;
+);
+
+function process_params()
+(
+  sync_num   = slider6;
+  sync_denom = slider7;
+  
+  phi = slider5;
+  
+  attack_ms  = slider1;
+  attack_sec = attack_ms / 1000;
+  release_ms = slider4;
+  release_sec = release_ms / 1000;
+  
+  hold_p =  slider3 / 100;
+  hold_ms = slider2 + ms_per_beat * 
+            ts_denom / sync_denom * sync_num * hold_p;
+  hold_sec = hold_ms / 1000;
+            
+  env_amt[0] = slider8;
+  env_amt[1] = slider9;
+  env_amt[2] = slider10;
+  env_amt[3] = slider11;
+  env_amt[4] = slider12;
+  env_amt[5] = slider13;
+  env_amt[6] = slider14;
+  env_amt[7] = slider15;
+  1;
+);
+
+process_params();
+
+@slider
+process_params();
+
+@block
+sec_per_beat = 1/tempo * 60;
+ms_per_beat = sec_per_beat * 1000;
+dt = 1/srate; 
+
+pulse_position = beat_position * sync_denom / ts_denom * sync_num;
+
+env_number = floor((pulse_position - 1) % 8);
+
+env_group_startpos = floor((pulse_position - 1) *
+                      ts_denom / sync_denom / 8) * 8 + 1;
+
+env_start_pos = (env_group_startpos + env_number) * 
+                  sec_per_beat * sync_denom / ts_denom;
+
+// precompute a block of envelope scalars to apply to the samples
+env_index = 0;
+loop(samplesblock,
+  t_env = (play_position - env_start_pos) * 1000 + (dt * env_index);
+  env_scalar = env_amt[env_number] * 
+      ((t_env < attack_ms) ? 
+      (
+        (t_env / attack_ms)^phi;
+      ) : (t_env < attack_ms + hold_ms) ? 
+      (
+        1;
+      ) : (t_env  < attack_ms + hold_ms + release_ms) ?
+      (
+        1 - ((t_env - attack_ms - hold_ms) / release_ms )^phi;
+      ) : 0);
+      
+  env_block[env_index] = env_scalar;
+  env_index += 1;
+);
+env_index = 0;
+
+@sample
+spl0 *= env_block[env_index];
+spl1 *= env_block[env_index];
+slider16 = env_block[env_index];
+env_index += 1;
