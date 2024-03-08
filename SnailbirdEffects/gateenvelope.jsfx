@@ -36,26 +36,24 @@ out_pin:Right Output
   env_amt = malloc(MAX_ENV * 8);
   env_block = malloc(samplesblock * 8);
 
-  sync_num   = $x0;
-  sync_denom = $x0;
+  sync_num   = 0;
+  sync_denom = 0;
 
-  phi = $x0;
+  phi = 0;
 
-  attack_ms  = $x0;
-  attack_sec = $x0;
-  release_ms = $x0;
-  release_sec = $x0;
+  attack_ms  = 0;
+  attack_sec = 0;
+  release_ms = 0;
+  release_sec = 0;
 
-  hold_p =  $x0;
-  hold_raw_ms = $x0;
-  hold_ms = $x0;
-  hold_sec = $x0;
-
-  gr_meter=1;
+  hold_p =  0;
+  hold_raw_ms = 0;
+  hold_ms = 0;
+  hold_sec = 0;
 
   env_index = 0;
   loop(MAX_ENV,
-    env_amt[env_index] = $x0;
+    env_amt[env_index] = 0;
     env_index += 1;
   );
 
