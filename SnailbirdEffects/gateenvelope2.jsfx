@@ -47,6 +47,7 @@ out_pin:Right Output
   release_sec = $x0;
 
   hold_p =  $x0;
+  hold_raw_ms = $x0;
   hold_ms = $x0;
   hold_sec = $x0;
 
@@ -69,7 +70,7 @@ out_pin:Right Output
     release_ms = slider4;
     
     hold_p =  slider3 / 100;
-    hold_ms = slider2;
+    hold_raw_ms = slider2;
               
     env_amt[0] = slider8;
     env_amt[1] = slider9;
@@ -89,45 +90,51 @@ out_pin:Right Output
 
 
 @block
-  dt = 1/srate; 
-  sec_per_beat = 1/tempo * 60;
+  dt0 = 1000 / srate;
+  dt = 0;
+  sec_per_beat = 60 / tempo;
   ms_per_beat = sec_per_beat * 1000;
   pulse_per_beat = sync_denom / ts_denom * sync_num;
   ms_per_pulse = ms_per_beat / pulse_per_beat;
   pulse_pos = beat_position * pulse_per_beat;
-  hold = hold_p * ms_per_beat / pulse_per_beat;
-
-  env_index = $x0;
+  hold_ms = hold_p * ms_per_beat / pulse_per_beat + hold_raw_ms;
+  env_scalar = 0;
+  
 @sample
-  t_ms = dt * env_index; 
-  t_pulse =  t_ms / ms_per_pulse;
   stage = $'_';
   
+  t_pulse =  dt / ms_per_pulse;
   env_groupstart_pos = floor((pulse_pos + t_pulse) / ENV_COUNT) * ENV_COUNT;
   env_number = floor((pulse_pos + t_pulse ) % ENV_COUNT);
   env_start_pos = (env_groupstart_pos + env_number);
   
-  t_env = (pulse_pos - env_start_pos) * ms_per_pulse + t_ms;
+  t_env = (pulse_pos - env_start_pos) * ms_per_pulse + dt;
   
   // envelope stages
   env_scalar = env_amt[env_number] * 
-      ((t_env < attack_ms) ? 
-      (
-        stage = "Attack";
-        (t_env / attack_ms)^phi;
-      ) : (t_env < attack_ms + hold) ? 
-      (
-        stage = "Hold";
-        1;
-      ) : (t_env  < attack_ms + hold + release_ms) ?
-      (
-        stage = "Release";
-        1 - ((t_env - attack_ms - hold) / release_ms )^phi;
-      ) : (stage = "End"; 0;));
+      //only trigger the envelope while playing
+      (play_state&1) ?
+      ( ((t_env < attack_ms) ? 
+        (
+          stage = "Attack"; 
+          (t_env / attack_ms)^phi;
+        ) : (t_env < attack_ms + hold_ms) ? 
+        (
+          stage = "Hold";
+          1;
+        ) : (t_env  < attack_ms + hold_ms + release_ms) ?
+        (
+          stage = "Release";
+          1 - ((t_env - attack_ms - hold_ms) / release_ms )^phi;
+        ) : (stage = "End"; 0;))
+       ) : 1; // if we aren't playing, full scale
+       
 
-spl0 *= env_scalar;
-spl1 *= env_scalar;
-env_index += 1;
+  dt += dt0;
+  
+  spl0 *= env_scalar;
+  spl1 *= env_scalar;
+
 
 @gfx 0 32 // request horizontal/vertical heights (0 means dont care)
 
@@ -142,4 +149,7 @@ env_index += 1;
   gfx_rectto(env_scalar*gfx_w, gfx_h);
 
   gfx_x=4; gfx_y = gfx_h * 0.75 + gfx_texth/2-gfx_texth; gfx_g=1; gfx_b=1;
+  gfx_drawnumber(env_scalar, 5); 
+  
+  gfx_x+=4;
   gfx_drawstr(stage);
