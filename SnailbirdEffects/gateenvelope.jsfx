@@ -7,7 +7,7 @@ desc:Rhythmic Amp Envelope for Trance Gate, Pumping, Swelling Effects
 slider1:5<0,200,1:log=100>Attack (ms)
 slider2:0<0,1000,1:log=100>Hold (ms)
 slider3:50<0,100,1>Hold (%)
-slider4:5<0,500,1:log=100>Release (ms)
+slider4:5<0,2000,1:log=100>Release (ms)
 slider5:1<0.1,10,0.05:log=1>φ Curve
 slider6:1<1,32,1>Sync Numerator
 slider7:4<4,32,4>Sync Denominator
