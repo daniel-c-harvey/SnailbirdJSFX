@@ -2,7 +2,7 @@ require "Scripts.SnailbirdScripts.include.util";
 require "Scripts.SnailbirdScripts.include.track_util";
 require "Scripts.SnailbirdScripts.include.proj_util";
 
-local DEBUG_OUTPUT = false;
+local DEBUG_OUTPUT = true;
 local LOOP_NAME = "~LOOP~";
 local LOOP_START = "~LOOP START~";
 local LOOP_END = "~LOOP END~";
@@ -30,8 +30,8 @@ function()
   -- Only bother if we're up and running
   if reaper.GetPlayState() ~= 1 then return; end
   
-  local session_proj = reaper.EnumProjects(1); -- current project is client
-  local looper_proj = GetProjectByName("Looper");
+  session_proj = reaper.EnumProjects(-1); -- current project is client
+  _, looper_proj = GetProjectByName("Looper");
 
   local looper_track_names = {"Looper TR-8S Kick Sub",
                               "Looper TD-3",

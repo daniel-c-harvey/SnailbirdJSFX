@@ -1,0 +1,153 @@
+//Gated Amp Envelope
+desc:Gated Amp Envelope [Snailbird]
+desc:Rhythmic Amp Envelope for Trance Gate, Pumping, Swelling Effects
+//tags: audio effect
+//author: Daniel Harvey
+
+slider1:5<0,200,1:log=100>Attack (ms)
+slider2:0<0,1000,1:log=100>Hold (ms)
+slider3:50<0,100,1>Hold (%)
+slider4:5<0,2000,1:log=100>Release (ms)
+slider5:1<0.1,10,0.05:log=1>φ Curve
+slider6:1<1,32,1>Sync Numerator
+slider7:4<4,32,4>Sync Denominator
+slider8:1<0,1,0.01>Env Amt 1
+slider9:1<0,1,0.01>Env Amt 2
+slider10:1<0,1,0.01>Env Amt 3
+slider11:1<0,1,0.01>Env Amt 4
+slider12:1<0,1,0.01>Env Amt 5
+slider13:1<0,1,0.01>Env Amt 6
+slider14:1<0,1,0.01>Env Amt 7
+slider15:1<0,1,0.01>Env Amt 8
+
+slider16:0<0,1,0.01>TEST OUTPUT
+
+in_pin:Left Input
+in_pin:Right Input
+out_pin:Left Output
+out_pin:Right Output
+
+@init
+  freemem = 0;
+  function malloc(size) ((freemem += size) - size);
+
+  ENV_COUNT = 8;
+  MAX_ENV = 8;
+  env_amt = malloc(MAX_ENV * 8);
+  env_block = malloc(samplesblock * 8);
+
+  sync_num   = 0;
+  sync_denom = 0;
+
+  phi = 0;
+
+  attack_ms  = 0;
+  attack_sec = 0;
+  release_ms = 0;
+  release_sec = 0;
+
+  hold_p =  0;
+  hold_raw_ms = 0;
+  hold_ms = 0;
+  hold_sec = 0;
+
+  env_index = 0;
+  loop(MAX_ENV,
+    env_amt[env_index] = 0;
+    env_index += 1;
+  );
+
+  function process_params()
+  (
+    sync_num   = slider6;
+    sync_denom = slider7;
+    
+    phi = slider5;
+    
+    attack_ms  = slider1;
+    release_ms = slider4;
+    
+    hold_p =  slider3 / 100;
+    hold_raw_ms = slider2;
+              
+    env_amt[0] = slider8;
+    env_amt[1] = slider9;
+    env_amt[2] = slider10;
+    env_amt[3] = slider11;
+    env_amt[4] = slider12;
+    env_amt[5] = slider13;
+    env_amt[6] = slider14;
+    env_amt[7] = slider15;
+    1;
+  );
+
+  process_params();
+
+@slider
+  process_params();
+
+
+@block
+  dt0 = 1000 / srate;
+  dt = 0;
+  sec_per_beat = 60 / tempo;
+  ms_per_beat = sec_per_beat * 1000;
+  pulse_per_beat = sync_denom / ts_denom * sync_num;
+  ms_per_pulse = ms_per_beat / pulse_per_beat;
+  pulse_pos = beat_position * pulse_per_beat;
+  hold_ms = hold_p * ms_per_beat / pulse_per_beat + hold_raw_ms;
+  env_scalar = 0;
+  
+@sample
+  stage = $'_';
+  
+  t_pulse =  dt / ms_per_pulse;
+  env_groupstart_pos = floor((pulse_pos + t_pulse) / ENV_COUNT) * ENV_COUNT;
+  env_number = floor((pulse_pos + t_pulse ) % ENV_COUNT);
+  env_start_pos = (env_groupstart_pos + env_number);
+  
+  t_env = (pulse_pos - env_start_pos) * ms_per_pulse + dt;
+  
+  // envelope stages
+  env_scalar = env_amt[env_number] * 
+      //only trigger the envelope while playing
+      (play_state&1) ?
+      ( ((t_env < attack_ms) ? 
+        (
+          stage = "Attack"; 
+          (t_env / attack_ms)^phi;
+        ) : (t_env < attack_ms + hold_ms) ? 
+        (
+          stage = "Hold";
+          1;
+        ) : (t_env  < attack_ms + hold_ms + release_ms) ?
+        (
+          stage = "Release";
+          1 - ((t_env - attack_ms - hold_ms) / release_ms )^phi;
+        ) : (stage = "End"; 0;))
+       ) : 1; // if we aren't playing, full scale
+       
+
+  dt += dt0;
+  
+  spl0 *= env_scalar;
+  spl1 *= env_scalar;
+
+
+@gfx 0 32 // request horizontal/vertical heights (0 means dont care)
+
+  gfx_y=0; gfx_x=0; gfx_r=0.2; gfx_g=0.8; gfx_b=0.2; gfx_a=1;
+  gfx_rectto(t_env / ms_per_pulse * gfx_w,gfx_h/2);
+  
+  gfx_x=4; gfx_y = gfx_h * 0.25 + gfx_texth/2-gfx_texth; gfx_g=1; gfx_b=1;
+  gfx_drawnumber(t_env,1);
+  gfx_drawstr(" ms");
+  
+  gfx_x=0; gfx_y=gfx_h/2; gfx_r=1; gfx_g=0; gfx_b=0;
+  gfx_rectto(env_scalar*gfx_w, gfx_h);
+
+  gfx_x=4; gfx_y = gfx_h * 0.75 + gfx_texth/2-gfx_texth; gfx_g=1; gfx_b=1;
+  gfx_drawnumber(env_scalar, 5); 
+  
+  gfx_x+=4;
+  gfx_drawstr(stage);
